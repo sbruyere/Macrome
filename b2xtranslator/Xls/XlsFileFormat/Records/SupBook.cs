@@ -155,31 +155,44 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
 
         public override byte[] GetBytes()
         {
-            using (BinaryWriter bw = new BinaryWriter(new MemoryStream()))
+            if (RawBytes != null)
             {
-                bw.Write(GetHeaderBytes());
-                bw.Write(Convert.ToUInt16(this.ctab));
-                bw.Write(Convert.ToUInt16(this.cch));
-
-                if (this.isvirtpath && this.ctab == 1 && this.cch < 0xff)
-                {
-                    XLUnicodeStringNoCch virtPathXLU = new XLUnicodeStringNoCch(virtpathstring);
-                    bw.Write(virtPathXLU.Bytes);
-                    foreach (var rgstString in this.rgst)
-                    {
-                        ushort length = Convert.ToUInt16(rgstString.Length);
-                        bw.Write(length);
-                        XLUnicodeStringNoCch rgstXLU = new XLUnicodeStringNoCch(rgstString);
-                        bw.Write(rgstXLU.Bytes);
-                    }
-                }
-                else if (this.isvirtpath || this.isexternalworkbookreferencing || this.isunusedsupportinglink)
-                {
-                    throw new NotImplementedException();
-                }
-
-                return bw.GetBytesWritten();
+                return RawBytes;
             }
+            else
+            {
+                return GetHeaderBytes();
+            }
+            //}
+
+            //public override byte[] GetBytes()
+            //{
+            //    using (BinaryWriter bw = new BinaryWriter(new MemoryStream()))
+            //    {
+            //        bw.Write(GetHeaderBytes());
+            //        bw.Write(Convert.ToUInt16(this.ctab));
+            //        bw.Write(Convert.ToUInt16(this.cch));
+
+            //        if (this.isvirtpath && this.ctab == 1 && this.cch < 0xff)
+            //        {
+            //            XLUnicodeStringNoCch virtPathXLU = new XLUnicodeStringNoCch(virtpathstring);
+            //            bw.Write(virtPathXLU.Bytes);
+            //            foreach (var rgstString in this.rgst)
+            //            {
+            //                ushort length = Convert.ToUInt16(rgstString.Length);
+            //                bw.Write(length);
+            //                XLUnicodeStringNoCch rgstXLU = new XLUnicodeStringNoCch(rgstString);
+            //                bw.Write(rgstXLU.Bytes);
+            //            }
+            //        }
+            //        else if (this.isvirtpath || this.isexternalworkbookreferencing || this.isunusedsupportinglink)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        return bw.GetBytesWritten();
+            //    }
+            //}
         }
     }
 }

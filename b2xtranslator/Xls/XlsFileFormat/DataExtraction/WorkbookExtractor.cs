@@ -59,7 +59,7 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat
                 bh.length = this.StreamReader.ReadUInt16();
                 // Debugging output 
                 // TraceLogger.DebugInternal("BIFF {0}\t{1}\t", bh.id, bh.length);
-                Console.WriteLine("BIFF {0}\t{1}\t", bh.id, bh.length);
+                //Console.WriteLine("BIFF {0}\t{1}\t", bh.id, bh.length);
 
                 switch (bh.id)
                 {

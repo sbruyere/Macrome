@@ -66,6 +66,8 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.DataContainer
             if (obj is Stack<AbstractPtg>)
             {
                 this.ptgStack = (Stack<AbstractPtg>)obj;
+                if (ptgStack.Count == 0)
+                    1.ToString();
             }
         }
 

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace b2xtranslator.OpenXmlLib
 {
     public abstract class OpenXmlPackage : OpenXmlPartContainer, IDisposable
     {
         #region Protected members
-        protected string _fileName;
+        //protected string _fileName;
 
         protected Dictionary<string, string> _defaultTypes = new Dictionary<string, string>();
         protected Dictionary<string, string> _partOverrides = new Dictionary<string, string>();
@@ -17,6 +18,7 @@ namespace b2xtranslator.OpenXmlLib
         protected int _imageCounter;
         protected int _vmlCounter;
         protected int _oleCounter;
+        private Stream _stream;
         #endregion
 
         public enum DocumentType
@@ -27,9 +29,9 @@ namespace b2xtranslator.OpenXmlLib
             Template
         }
 
-        protected OpenXmlPackage(string fileName)
+        protected OpenXmlPackage(Stream stream)
         {
-            this._fileName = fileName;
+            this._stream = stream;
 
             this._defaultTypes.Add("rels", OpenXmlContentTypes.Relationships);
             this._defaultTypes.Add("xml", OpenXmlContentTypes.Xml);
@@ -38,6 +40,18 @@ namespace b2xtranslator.OpenXmlLib
             this._defaultTypes.Add("emf", OpenXmlContentTypes.Emf);
             this._defaultTypes.Add("wmf", OpenXmlContentTypes.Wmf);
         }
+
+        //protected OpenXmlPackage(string fileName)
+        //{
+        //    this._fileName = fileName;
+
+        //    this._defaultTypes.Add("rels", OpenXmlContentTypes.Relationships);
+        //    this._defaultTypes.Add("xml", OpenXmlContentTypes.Xml);
+        //    this._defaultTypes.Add("bin", OpenXmlContentTypes.OleObject);
+        //    this._defaultTypes.Add("vml", OpenXmlContentTypes.Vml);
+        //    this._defaultTypes.Add("emf", OpenXmlContentTypes.Emf);
+        //    this._defaultTypes.Add("wmf", OpenXmlContentTypes.Wmf);
+        //}
 
         public void Dispose()
         {
@@ -49,18 +63,18 @@ namespace b2xtranslator.OpenXmlLib
         {
             // serialize the package on closing
             var writer = new OpenXmlWriter();
-            writer.Open(this.FileName);
+            writer.Open(this._stream);
 
             this.WritePackage(writer);
 
             writer.Close();
         }
 
-        public string FileName
-        {
-            get { return this._fileName; }
-            set { this._fileName = value; }
-        }
+        //public string FileName
+        //{
+        //    get { return this._fileName; }
+        //    set { this._fileName = value; }
+        //}
 
         public CorePropertiesPart CoreFilePropertiesPart
         {

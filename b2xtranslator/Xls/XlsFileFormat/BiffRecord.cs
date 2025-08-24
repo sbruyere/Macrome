@@ -12,6 +12,8 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat
 {
     public class BiffRecord : IWritableBytestream, ICloneable
     {
+        public BoundSheet8 Sheet { get; set; }
+
         IStreamReader _reader;
 
         protected byte[] RawBytes = null;

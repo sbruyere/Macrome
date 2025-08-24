@@ -269,6 +269,9 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat
                 throw new ExtractorException(ExtractorException.PARSEDFORMULAEXCEPTION, ex);
             }
 
+            if (ptgStack.Count == 0)
+                5.ToString();
+
             return ptgStack;
         }
 

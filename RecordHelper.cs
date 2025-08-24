@@ -23,14 +23,18 @@ namespace Macrome
             RecordType.FilePass,    //Indicates the presence of an RC4 or XOR Obfuscation Password
         };
 
-        public static string GetRelevantRecordDumpString(WorkbookStream wbs, bool dumpHexBytes = false, bool showAttrInfo = false)
+        public static string GetRelevantRecordDumpString(WorkbookStream wbs, 
+            bool dumpHexBytes = false, 
+            bool showAttrInfo = false)
         {
             int numBytesToDump = 0;
             if (dumpHexBytes) numBytesToDump = 0x1000;
 
             bool hasPassword = wbs.HasPasswordToOpen();
 
-            List<BiffRecord> relevantRecords = wbs.Records.Where(rec => RecordHelper.RelevantTypes.Contains(rec.Id)).ToList();
+            List<BiffRecord> relevantRecords = wbs.Records
+                .Where(rec => RecordHelper.RelevantTypes.Contains(rec.Id)
+                ).ToList();
 
             //We can only interpret the data of these records if they are not encrypted
             if (!hasPassword)
@@ -43,8 +47,13 @@ namespace Macrome
 
             foreach (var record in relevantRecords)
             {
-                dumpString += record.ToHexDumpString(numBytesToDump, showAttrInfo);
-                dumpString += "\n";
+                try
+                {
+                    dumpString += record.Sheet.stName + ":";
+                    dumpString += record.ToHexDumpString(numBytesToDump, showAttrInfo);
+                    dumpString += "\n";
+                }
+                catch { }
             }
 
             return dumpString;
@@ -56,30 +65,39 @@ namespace Macrome
             List<BiffRecord> specificRecords = new List<BiffRecord>();
             foreach (var record in generalRecords)
             {
-                switch (record.Id)
-                {
-                    case RecordType.Formula:
-                        specificRecords.Add(record.AsRecordType<Formula>());
-                        break;
-                    case RecordType.Lbl:
-                        specificRecords.Add(record.AsRecordType<Lbl>());
-                        break;
-                    case RecordType.BoundSheet8:
-                        specificRecords.Add(record.AsRecordType<BoundSheet8>());
-                        break;
-                    case RecordType.SupBook:
-                        specificRecords.Add(record.AsRecordType<SupBook>());
-                        break;
-                    case RecordType.ExternSheet:
-                        specificRecords.Add(record.AsRecordType<ExternSheet>());
-                        break;
-                    default:
-                        specificRecords.Add(record);
-                        break;
-                }
+                BiffRecord result = GetSpecificRecord(record);
+                specificRecords.Add(result);
             }
 
             return specificRecords;
+        }
+
+        public static BiffRecord GetSpecificRecord(BiffRecord record)
+        {
+            BiffRecord result = null;
+            switch (record.Id)
+            {
+                case RecordType.Formula:
+                    result = record.AsRecordType<Formula>();
+                    break;
+                case RecordType.Lbl:
+                    result = record.AsRecordType<Lbl>();
+                    break;
+                case RecordType.BoundSheet8:
+                    result = record.AsRecordType<BoundSheet8>();
+                    break;
+                case RecordType.SupBook:
+                    result = record.AsRecordType<SupBook>();
+                    break;
+                case RecordType.ExternSheet:
+                    result = record.AsRecordType<ExternSheet>();
+                    break;
+                default:
+                    result = record;
+                    break;
+            }
+
+            return result;
         }
 
         public static List<BiffRecord> ParseBiffStreamBytes(byte[] bytes)

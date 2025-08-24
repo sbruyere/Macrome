@@ -1,4 +1,6 @@
-﻿namespace b2xtranslator.OpenXmlLib.SpreadsheetML
+﻿using System.IO;
+
+namespace b2xtranslator.OpenXmlLib.SpreadsheetML
 {
     /// <summary>
     /// Includes some information about the spreadsheetdocument 
@@ -12,8 +14,8 @@
         /// Ctor 
         /// </summary>
         /// <param name="fileName">Filename of the file which should be written</param>
-        protected SpreadsheetDocument(string fileName, OpenXmlPackage.DocumentType type)
-            : base(fileName)
+        protected SpreadsheetDocument(Stream output, OpenXmlPackage.DocumentType type)
+            : base(output)
         {
             switch (type)
             {
@@ -39,9 +41,9 @@
         /// </summary>
         /// <param name="fileName">The name of the file which should be written</param>
         /// <returns>The object itself</returns>
-        public static SpreadsheetDocument Create(string fileName, OpenXmlPackage.DocumentType type)
+        public static SpreadsheetDocument Create(Stream output, OpenXmlPackage.DocumentType type)
         {
-            var spreadsheet = new SpreadsheetDocument(fileName, type);
+            var spreadsheet = new SpreadsheetDocument(output, type);
             return spreadsheet;
         }
 

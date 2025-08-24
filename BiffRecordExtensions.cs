@@ -91,7 +91,8 @@ namespace Macrome
                 Formula f = (Formula) record;
                 if (f.cce == 0 && f.RawBytesValue.Length != bytes.Length + 4)
                 {
-                    biffString = "!Error Parsing Formula!";
+                    //biffString = "!Error Parsing Formula!" + f.ToFormulaString(showAttrInfo);
+                    return string.Empty;
                 }
                 else
                 {

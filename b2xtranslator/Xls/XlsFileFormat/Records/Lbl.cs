@@ -430,6 +430,9 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
                     case PtgRef3d ptgRef3d:
                         labelRgceContent = ptgRef3d.ToString();
                         break;
+                    case PtgArea3d ptgArea3d:
+                        labelRgceContent = ptgArea3d.ToString();
+                        break;
                     default:
                         labelRgceContent = PtgHelper.GetFormulaString(rgce);
                         break;

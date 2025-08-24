@@ -413,6 +413,10 @@ namespace Macrome
                    if (curRow > 0xE000)
                    {
                        Formula nextRowFormula = FormulaHelper.GetGotoFormulaForCell(curRow + formulas.Count, curCol, 0, curCol + 1);
+
+                        if (nextRowFormula.ptgStack.Count == 0)
+                            (0).ToString();
+
                        stringFormulas.Add(nextRowFormula);
 
                        curRow = 0;

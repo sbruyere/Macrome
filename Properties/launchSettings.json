@@ -2,7 +2,7 @@
   "profiles": {
     "Macrome": {
       "commandName": "Project",
-      "commandLineArgs": "dump --path s:\\projects\\excel-macro-tools\\excel-test-modified.xls"
+      "commandLineArgs": "dump --path C:\\Users\\USR-S974\\Desktop\\Book18MA.xls"
     }
   }
 }

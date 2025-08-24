@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
+
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using b2xtranslator.Spreadsheet.XlsFileFormat;
+using b2xtranslator.Spreadsheet.XlsFileFormat.DataContainer;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Ptg;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Records;
 using b2xtranslator.StructuredStorage.Reader;
@@ -44,7 +44,7 @@ namespace Macrome
         /// <param name="password">XOR Obfuscation decryption password to try. Defaults to VelvetSweatshop if FilePass record is found.</param>
         /// <param name="disableDecryption">Use this flag in order to skip decryption of the file before dumping.</param>
 
-        public static void Dump(FileInfo path, bool dumpAll = false, bool showAttrInfo = false, bool dumpHexBytes = false, string password = "VelvetSweatshop", bool disableDecryption = false)
+        public static void Dump(FileInfo path, bool dumpAll = true, bool showAttrInfo = false, bool dumpHexBytes = true, string password = "VelvetSweatshop", bool disableDecryption = false)
         {
             if (path == null)
             {
@@ -59,6 +59,57 @@ namespace Macrome
             }
 
             WorkbookStream wbs = new WorkbookStream(path.FullName);
+            XlsDocument xlsDocument;
+            using (var fs = new FileStream(path.FullName, FileMode.Open))
+            {
+                xlsDocument = new XlsDocument(new StructuredStorageReader(fs));
+
+                var workbookData = xlsDocument.WorkBookData;
+                foreach (var sheet in workbookData.boundSheetDataList)
+                {
+                    switch (sheet)
+                    {
+                        case MacroWorkSheetData macroSheetData:
+                            var formulas = macroSheetData.FORMULAList;
+
+                            foreach (var f in formulas)
+                            {
+                                string str = f.ToHexDumpString();
+                                (0).ToString();
+                            }
+
+                            var numbers = macroSheetData.NUMBERList;
+                            foreach (var n in numbers)
+                            {
+                                string str = n.ToHexDumpString();
+                                (0).ToString();
+                            }
+                            break;
+                        case ChartSheetData chartSheetData:
+                            break;
+                        case WorkSheetData workSheetData:
+                            var formulas2 = workSheetData.FORMULAList;
+
+                            foreach (var f in formulas2)
+                            {
+                                string str = f.ToHexDumpString();
+                                (0).ToString();
+                            }
+
+                            var numbers2 = workSheetData.NUMBERList;
+                            foreach (var n in numbers2)
+                            {
+                                string str = n.ToHexDumpString();
+                                (0).ToString();
+                            }
+                            break;
+                            break;
+                    }
+                    (0).ToString();
+                }
+                var workbookExtractor = xlsDocument.workBookExtr;
+                (0).ToString();
+            }
 
             if (wbs.HasPasswordToOpen() && !disableDecryption)
             {
@@ -103,11 +154,67 @@ namespace Macrome
             if (dumpAll)
             {
                 List<BiffRecord> records;
-                WorkbookStream fullStream = new WorkbookStream(PtgHelper.UpdateGlobalsStreamReferences(wbs.Records));
+
+                List<BiffRecord> relevantRecords = wbs.Records;
+                relevantRecords = PtgHelper.UpdateGlobalsStreamReferences(relevantRecords);
+
+                WorkbookStream fullStream = new WorkbookStream(relevantRecords);
                 records = fullStream.Records;
+                List<string> recordDumps = new List<string>();
+                List<string> recordFormulas = new List<string>();
+
                 foreach (var record in records)
                 {
-                    Console.WriteLine(record.ToHexDumpString(numBytesToDump, showAttrInfo));
+                    try
+                    {
+                        var specRecord = RecordHelper.GetSpecificRecord(record);
+
+                        if (record.Sheet == null)
+                        {
+                            recordDumps.Add(specRecord.ToHexDumpString(numBytesToDump, showAttrInfo));
+                        }
+                        else
+                        {
+                            recordDumps.Add(record.Sheet.stName.Value + " - " + specRecord.ToHexDumpString(numBytesToDump, showAttrInfo));
+                        }
+
+                        if (specRecord is Formula)
+                        {
+                            var formula = specRecord as Formula;
+
+                            recordFormulas.Add(specRecord.ToHexDumpString(0, false, false));
+                            //recordFormulas.Add(record.ToHexDumpString(0, false, false));
+                        }
+
+                        //if (specRecord is ExternSheet)
+                        //{
+                            
+                        //    //var extSheet = specRecord as ExternSheet;
+                        //    //fullStream.addExternSheetData(extSheet);
+
+                        //    //var rgXTI = (specRecord as ExternSheet).rgXTI;
+                        //    (0).ToString();
+                        //}
+                    }
+                    catch (Exception e) {
+                        (0).ToString();
+                    }
+
+                }
+
+                foreach (var v in recordDumps)
+                {
+                    Console.WriteLine(v);
+                }
+
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine("#########################################################");
+                Console.WriteLine("#   Formulas");
+
+                foreach (var v in recordFormulas)
+                {
+                    Console.WriteLine(v);
                 }
             }
             else
@@ -165,11 +272,11 @@ namespace Macrome
             wbEditor.NormalizeAutoOpenLabels();
             wbEditor.UnhideSheets();
 
-            ExcelDocWriter writer = new ExcelDocWriter();
+            //ExcelDocWriter writer = new ExcelDocWriter();
             string outputPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + outputFileName;
             Console.WriteLine("Writing deobfuscated document to {0}", outputPath);
 
-            writer.WriteDocument(outputPath, wbEditor.WbStream);
+            //writer.WriteDocument(outputPath, wbEditor.WbStream);
         }
 
         /// <summary>
@@ -218,7 +325,7 @@ namespace Macrome
 
             WorkbookStream wbs = LoadDecoyDocument(decoyDocPath);
             List<string> sheetNames = wbs.GetAllRecordsByType<BoundSheet8>().Select(bs => bs.stName.Value).ToList();
-            VBAInfo vbaInfo = VBAInfo.FromCompoundFilePath(decoyDocPath, sheetNames);
+            //VBAInfo vbaInfo = VBAInfo.FromCompoundFilePath(decoyDocPath, sheetNames);
             
             List<string> preambleCode = new List<string>();
             if (preamble != null)
@@ -406,10 +513,10 @@ namespace Macrome
                 createdWorkbook = xorObfuscation.EncryptWorkbookStream(createdWorkbook, password);
             }
 
-            ExcelDocWriter writer = new ExcelDocWriter();
+            //ExcelDocWriter writer = new ExcelDocWriter();
             string outputPath = AssemblyDirectory + Path.DirectorySeparatorChar + outputFileName;
             Console.WriteLine("Writing generated document to {0}", outputPath);
-            writer.WriteDocument(outputPath, createdWorkbook, vbaInfo);
+            //writer.WriteDocument(outputPath, createdWorkbook, vbaInfo);
         }
 
 
@@ -419,49 +526,50 @@ namespace Macrome
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            try
-            {
-                Command buildCommand = new Command("b",null);
-                buildCommand.AddAlias("build");
-                MethodInfo buildMethodInfo = typeof(Program).GetMethod(nameof(Build));
-                buildCommand.ConfigureFromMethod(buildMethodInfo);
+            //try
+            //{
+            //    Command buildCommand = new Command("b",null);
+            //    buildCommand.Aliases.Add("build");
+            //    MethodInfo buildMethodInfo = typeof(Program).GetMethod(nameof(Build));
+            //    buildCommand.ConfigureFromMethod(buildMethodInfo);
 
-                Command deobfuscateCommand = new Command("d",null);
-                deobfuscateCommand.AddAlias("deobfuscate");
-                MethodInfo deobfuscateMethodInfo = typeof(Program).GetMethod(nameof(Deobfuscate));
-                deobfuscateCommand.ConfigureFromMethod(deobfuscateMethodInfo);
+            //    Command deobfuscateCommand = new Command("d",null);
+            //    deobfuscateCommand.Aliases.Add("deobfuscate");
+            //    MethodInfo deobfuscateMethodInfo = typeof(Program).GetMethod(nameof(Deobfuscate));
+            //    deobfuscateCommand.ConfigureFromMethod(deobfuscateMethodInfo);
 
-                Command dumpCommand = new Command("dump", null);
-                MethodInfo dumpMethodInfo = typeof(Program).GetMethod(nameof(Dump));
-                dumpCommand.ConfigureFromMethod(dumpMethodInfo);
+            //    Command dumpCommand = new Command("dump", null);
+            //    MethodInfo dumpMethodInfo = typeof(Program).GetMethod(nameof(Dump));
+            //    dumpCommand.ConfigureFromMethod(dumpMethodInfo);
 
 
-                RootCommand rootCommand = new RootCommand("Build an obfuscated XLS Macro Document, or Deobfuscate an existing malicious XLS Macro Document.")
-                {
-                    deobfuscateCommand,
-                    buildCommand,
-                    dumpCommand    
-                };
+            //    RootCommand rootCommand = new RootCommand("Build an obfuscated XLS Macro Document, or Deobfuscate an existing malicious XLS Macro Document.")
+            //    {
+            //        deobfuscateCommand,
+            //        buildCommand,
+            //        dumpCommand    
+            //    };
+                
+                
+            //    //CommandLineBuilder builder = new CommandLineBuilder(rootCommand);
+            //    //builder.ConfigureHelpFromXmlComments(buildMethodInfo, null);
 
-                CommandLineBuilder builder = new CommandLineBuilder(rootCommand);
-                builder.ConfigureHelpFromXmlComments(buildMethodInfo, null);
+            //    //Manually set this after reading the XML for descriptions
+            //    //builder.Command.Description =
+            //    //    "Build an obfuscated XLS Macro Document or Deobfuscate an existing malicious XLS Macro Document.";
 
-                //Manually set this after reading the XML for descriptions
-                builder.Command.Description =
-                    "Build an obfuscated XLS Macro Document or Deobfuscate an existing malicious XLS Macro Document.";
-
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-                builder
-                    .UseDefaults()
-                    .Build()
-                    .Invoke(args);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unexpected Exception Occurred:\n");
-                Console.WriteLine(e);
-            }
+            //    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+              
+            //    //builder
+            //    //    .UseDefaults()
+            //    //    .Build()
+            //    //    .Invoke(args);
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine("Unexpected Exception Occurred:\n");
+            //    Console.WriteLine(e);
+            //}
         }
         
         

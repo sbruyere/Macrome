@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using b2xtranslator.Spreadsheet.XlsFileFormat;
+using b2xtranslator.Spreadsheet.XlsFileFormat.DataContainer;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Ptg;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Records;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Structures;
@@ -22,11 +23,81 @@ namespace Macrome
             get { return _biffRecords; }
         }
 
+        public List<SheetData> boundSheetDataList;
+        public List<ExternSheetData> externSheetDataList;
+        public LinkedList<SupBookData> supBookDataList;
+        public LinkedList<XTIData> xtiDataList;
+        public List<Lbl> definedNameList;
+
+        public int refWorkBookNumber;
+        /// <summary>
+        /// Add the ExternSheetData extracted from an EXTERNSHEET BIFF Record 
+        /// </summary>
+        /// <param name="ext">BIFF Record</param>
+        public void addExternSheetData(ExternSheet ext)
+        {
+            for (int i = 0; i < ext.cXTI; i++)
+            {
+                var extdata = new ExternSheetData(ext.iSUPBOOK[i], ext.itabFirst[i], ext.itabLast[i]);
+                externSheetDataList.Add(extdata);
+            }
+        }
+        /// <summary>
+        /// Add a SUPBOOK BIFF Record to the list 
+        /// </summary>
+        /// <param name="sup"></param>
+        public void addSupBookData(SupBook sup)
+        {
+
+            var supbook = new SupBookData(sup);
+            if (!supbook.SelfRef)
+            {
+                this.refWorkBookNumber++;
+                supbook.Number = this.refWorkBookNumber;
+            }
+
+
+            this.supBookDataList.AddLast(supbook);
+        }
+
+
+        public WorkbookStream(Stream stream)
+        {
+            using (var fs = stream)
+            {
+                ssr = new StructuredStorageReader(fs);
+                try
+                {
+                    var wbStream = ssr.GetStream("Workbook");
+                    byte[] wbBytes = new byte[wbStream.Length];
+                    wbStream.Read(wbBytes, 0, wbBytes.Length, 0);
+                    _biffRecords = RecordHelper.ParseBiffStreamBytes(wbBytes);
+                }
+                catch (StreamNotFoundException)
+                {
+                    var wbStream = ssr.GetStream("Book");
+                    Console.WriteLine("WARNING: Main stream is in a Book record indicating legacy Excel 5 BIFF format. This may not parse correctly.");
+
+                    byte[] wbBytes = new byte[wbStream.Length];
+                    wbStream.Read(wbBytes, 0, wbBytes.Length, 0);
+                    try
+                    {
+                        _biffRecords = RecordHelper.ParseBiffStreamBytes(wbBytes);
+                    }
+                    catch (Exception)
+                    {
+                        throw new NotImplementedException("Error parsing Book stream: Macrome currently doesn't support the Excel 5 BIFF format.");
+                    }
+                }
+            }
+        }
+        public StructuredStorageReader ssr;
+
         public WorkbookStream(string filePath)
         {
             using (var fs = new FileStream(filePath, FileMode.Open))
             {
-                StructuredStorageReader ssr = new StructuredStorageReader(fs);
+                ssr = new StructuredStorageReader(fs);
                 try
                 {
                     var wbStream = ssr.GetStream("Workbook");

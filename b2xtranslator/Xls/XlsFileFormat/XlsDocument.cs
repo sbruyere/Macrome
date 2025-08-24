@@ -21,7 +21,7 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat
         /// <summary>
         /// The Workbookextractor / container 
         /// </summary>
-        private WorkbookExtractor workBookExtr;
+        public WorkbookExtractor workBookExtr;
 
         /// <summary>
         /// This attribute stores the hole Workbookdata 

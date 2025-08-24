@@ -100,6 +100,9 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
             this.cce = cellParsedFormula.cce;
             this.ptgStack = cellParsedFormula.PtgStack;
 
+            if (ptgStack.Count == 0)
+                (0).ToString();
+
             this._length = CalculateLength();
         }
 
@@ -146,6 +149,9 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
             this.cce = cellParsedFormula.cce;
             this.ptgStack = cellParsedFormula.PtgStack;
 
+            if (this.ptgStack.Count == 0)
+                (0).ToString();
+
             this._length = CalculateLength();
         }
 
@@ -187,6 +193,9 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
                 try
                 {
                     this.ptgStack = ExcelHelperClass.getFormulaStack(this.Reader, this.cce);
+
+                    if (this.ptgStack.Count == 0)
+                        (0).ToString();
 
                     List<PtgMemArea> memAreas = this.ptgStack.Where(ptg => ptg is PtgMemArea).Cast<PtgMemArea>().ToList();
 
@@ -248,7 +257,7 @@ namespace b2xtranslator.Spreadsheet.XlsFileFormat.Records
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    //throw new NotImplementedException();
                 }
 
                 return bw.GetBytesWritten();

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using System.Xml.Xsl;
 using b2xtranslator.Spreadsheet.XlsFileFormat;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Ptg;
 using b2xtranslator.Spreadsheet.XlsFileFormat.Records;
@@ -108,9 +109,26 @@ namespace b2xtranslator.xls.XlsFileFormat
         public static List<BiffRecord> UpdateGlobalsStreamReferences(List<BiffRecord> records)
         {
             List<Lbl> labelRecords = records.Where(r => r.Id == RecordType.Lbl).Select(r => r.AsRecordType<Lbl>()).ToList();
-            List<BoundSheet8> sheetRecords = records.Where(r => r.Id == RecordType.BoundSheet8).Select(r => r.AsRecordType<BoundSheet8>()).ToList();
+            List<BoundSheet8> sheetRecords = records
+                .Where(r => r.Id == RecordType.BoundSheet8)
+                .Select(r => r.AsRecordType<BoundSheet8>())
+                .ToList();
+
             //Incorrect way to do this, but works for simpler cases - just pull the first ExternSheet record in the XLS file.
             BiffRecord firstExternSheet = records.FirstOrDefault(r => r.Id == RecordType.ExternSheet);
+
+            // Étape importante : associer chaque record à sa feuille si applicable
+            foreach (var record in records)
+            {
+                var sheet = sheetRecords
+                    .LastOrDefault(s => s.lbPlyPos <= record.Offset);
+
+                if (sheet != null)
+                {
+                    record.Sheet = sheet;
+                }
+            }
+
 
             List<BiffRecord> updatedRecords = new List<BiffRecord>();
             foreach (var record in records)
@@ -119,21 +137,25 @@ namespace b2xtranslator.xls.XlsFileFormat
                 {
                     case Formula formulaRecord:
                         Stack<AbstractPtg> modifiedFormulaStack = UpdateNameRecords(formulaRecord.ptgStack, labelRecords);
+
                         if (firstExternSheet != null)
                         {
                             modifiedFormulaStack = UpdateSheetReferences(modifiedFormulaStack, sheetRecords,
                                 firstExternSheet.AsRecordType<ExternSheet>());
                         }
+
                         formulaRecord.SetCellParsedFormula(new CellParsedFormula(modifiedFormulaStack));
                         updatedRecords.Add(formulaRecord);
                         continue;
                     case Lbl lblRecord:
                         Stack<AbstractPtg> modifiedLabelStack = UpdateNameRecords(lblRecord.rgce, labelRecords);
+
                         if (firstExternSheet != null)
                         {
                             modifiedLabelStack = UpdateSheetReferences(modifiedLabelStack, sheetRecords,
                                 firstExternSheet.AsRecordType<ExternSheet>());
                         }
+
                         lblRecord.SetRgce(modifiedLabelStack);
                         updatedRecords.Add(lblRecord);
                         continue;
@@ -302,6 +324,8 @@ namespace b2xtranslator.xls.XlsFileFormat
                 case PtgRefErr ptgRefErr:
                 case PtgRefErr3d ptgRefErr3d:
                 case PtgAreaErr ptgAreaErr:
+                    (0).ToString();
+                    break;
                 default:
                     throw new NotImplementedException(string.Format("No byte conversion implemented for {0}", ptg));
             }
@@ -457,6 +481,10 @@ namespace b2xtranslator.xls.XlsFileFormat
                 {
                     case PtgRef ptgRef:
                         return ptgRef.ToString();
+                    case PtgRef3d ptgRef:
+                        {
+                            return ptgRef.ToString();
+                        }
                     case PtgArea ptgArea:
                         return ptgArea.ToString();
                     case PtgArea3d ptgArea3d:
@@ -475,7 +503,7 @@ namespace b2xtranslator.xls.XlsFileFormat
         {
             if (ptgStack.Count == 0)
             {
-                return "!Null Ptg Stack! (Manually Edited Ptg Record)";
+                return string.Empty; // "!Null Ptg Stack! (Manually Edited Ptg Record)";
             }
 
             Stack<AbstractPtg> cloneStack = new Stack<AbstractPtg>(ptgStack.Reverse());
